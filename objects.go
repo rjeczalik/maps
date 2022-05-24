@@ -7,6 +7,18 @@ package objects
 // - finish Struct
 // - implement Zipper
 
+func Copy(w Writer, r Reader) error {
+	var (
+		tr = TeeReader(r, w)
+		it = Walk(tr)
+	)
+
+	for it.Next() {
+	}
+
+	return it.Err()
+}
+
 func get(r Reader, keys ...string) (v any, err error) {
 	var n = len(keys) - 1
 
