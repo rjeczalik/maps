@@ -16,7 +16,7 @@ func (l List) Set(key objects.Key, v any) error {
 }
 
 func (l List) Merge() objects.Map {
-	return nil // todo
+	return objects.Map{} // todo
 }
 
 func (l List) Walk(fn Func) {

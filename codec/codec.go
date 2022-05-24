@@ -26,11 +26,11 @@ type Map map[string]struct {
 	Children Map
 }
 
-func (m Map) Encode(key objects.Key, o objects.Object) ([]byte, error) {
+func (m Map) Encode(key objects.Key, o objects.Interface) ([]byte, error) {
 	return nil, nil
 }
 
-func (m Map) Decode(key objects.Key, p []byte, o *objects.Object) error {
+func (m Map) Decode(key objects.Key, p []byte, o *objects.Interface) error {
 	return nil
 }
 

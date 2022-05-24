@@ -28,6 +28,11 @@ func (k Key) String() string {
 	return strings.Join(k, ".")
 }
 
+func (k Key) Strings() []string {
+	return k
+}
+
+/*
 type Pair struct {
 	Key   Key
 	Value any
@@ -39,10 +44,10 @@ func (p Pairs) Map() Map {
 	m := make(Map)
 
 	for _, p := range p {
-		if _, key := m.Push(p.Key, p.Value); key == nil {
-			return nil
+		if err := Set(m, p.Value, p.Key...); err != nil {
+			panic(err)
 		}
 	}
 
 	return m
-}
+}*/
