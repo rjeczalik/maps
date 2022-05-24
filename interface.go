@@ -1,19 +1,19 @@
 package objects
 
-import "rafal.dev/objects/simple"
+import "rafal.dev/objects/types"
 
 type (
-	Type       = simple.Type
-	Reader     = simple.Reader
-	SafeReader = simple.SafeReader
-	ListerTo   = simple.ListerTo
-	Writer     = simple.Writer
-	SafeWriter = simple.SafeWriter
-	Interface  = simple.Interface
+	Type       = types.Type
+	Reader     = types.Reader
+	SafeReader = types.SafeReader
+	ListerTo   = types.ListerTo
+	Writer     = types.Writer
+	SafeWriter = types.SafeWriter
+	Interface  = types.Interface
 )
 
 const (
-	MapType    = simple.MapType
-	SliceType  = simple.SliceType
-	StructType = simple.StructType
+	MapType    = types.MapType
+	SliceType  = types.SliceType
+	StructType = types.StructType
 )

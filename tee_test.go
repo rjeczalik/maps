@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	"rafal.dev/objects"
-	"rafal.dev/objects/simple"
+	"rafal.dev/objects/types"
 )
 
 func TestTeeReader(t *testing.T) {
 	var (
 		x  = newX()
 		r  = objects.Make(x)
-		w  = make(simple.Map)
+		w  = make(types.Map)
 		tr = objects.TeeReader(r, w)
 		it = objects.Walk(tr)
 	)

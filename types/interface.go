@@ -1,4 +1,4 @@
-package simple
+package types
 
 type Reader interface {
 	Get(key string) (value any, ok bool)

@@ -1,4 +1,4 @@
-package simple_test
+package types_test
 
 import "testing"
 

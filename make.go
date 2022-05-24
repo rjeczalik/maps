@@ -3,11 +3,11 @@ package objects
 import (
 	"reflect"
 
-	"rafal.dev/objects/simple"
+	"rafal.dev/objects/types"
 )
 
 func Make(v any) Reader {
-	if v := simple.Make(v); v != nil {
+	if v := types.Make(v); v != nil {
 		return v
 	}
 

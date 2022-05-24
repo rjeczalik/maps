@@ -1,13 +1,13 @@
 package objects
 
-import "rafal.dev/objects/simple"
+import "rafal.dev/objects/types"
 
 var (
-	ErrOutOfBounds    = simple.ErrOutOfBounds
-	ErrNotFound       = simple.ErrNotFound
-	ErrUnexpectedType = simple.ErrUnexpectedType
+	ErrOutOfBounds    = types.ErrOutOfBounds
+	ErrNotFound       = types.ErrNotFound
+	ErrUnexpectedType = types.ErrUnexpectedType
 )
 
 type (
-	Error = simple.Error
+	Error = types.Error
 )
