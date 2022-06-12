@@ -1,6 +1,7 @@
 package objects_test
 
 import (
+	"context"
 	"testing"
 
 	"rafal.dev/objects"
@@ -9,14 +10,15 @@ import (
 
 func TestTeeReader(t *testing.T) {
 	var (
-		x  = newX()
-		r  = objects.Make(x)
-		w  = make(types.Map)
-		tr = objects.TeeReader(r, w)
-		it = objects.Walk(tr)
+		x   = newX()
+		r   = objects.Make(x)
+		w   = make(types.Map)
+		tr  = objects.TeeReader(r, w)
+		it  = objects.Walk(tr)
+		ctx = context.Background()
 	)
 
-	for it.Next() {
+	for it.Next(ctx) {
 	}
 
 	if err := it.Err(); err != nil {
@@ -30,12 +32,13 @@ func TestTeeReader(t *testing.T) {
 
 func TestCopy(t *testing.T) {
 	var (
-		x = newX()
-		r = objects.Make(x)
-		w = make(types.Map)
+		x   = newX()
+		r   = objects.Make(x)
+		w   = make(types.Map)
+		ctx = context.Background()
 	)
 
-	if err := objects.Copy(w, r); err != nil {
+	if err := objects.Copy(ctx, w, r); err != nil {
 		t.Fatalf("Copy()=%+v", err)
 	}
 

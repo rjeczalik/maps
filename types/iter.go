@@ -1,7 +1,9 @@
 package types
 
+import "context"
+
 type Iter interface {
-	Next() bool
+	Next(context.Context) bool
 	Parent() Reader
 	Leaf() bool
 	Key() Key

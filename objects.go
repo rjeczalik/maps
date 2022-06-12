@@ -1,26 +1,29 @@
 package objects
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
-func Copy(w Writer, r Reader) error {
+func Copy(ctx context.Context, w Writer, r Reader) error {
 	var (
 		tr = TeeReader(r, w)
 		it = Walk(tr)
 	)
 
-	for it.Next() {
+	for it.Next(ctx) {
 	}
 
 	return it.Err()
 }
 
-func TGet[T any](r Reader, keys ...string) (T, error) {
+func TGet[T any](ctx context.Context, r Reader, keys ...string) (T, error) {
 	var (
 		t  T
 		ok bool
 	)
 
-	v, err := Get(r, keys...)
+	v, err := Get(ctx, r, keys...)
 	if err != nil {
 		return t, err
 	}
@@ -38,7 +41,7 @@ func TGet[T any](r Reader, keys ...string) (T, error) {
 	return t, nil
 }
 
-func Get(r Reader, keys ...string) (any, error) {
+func Get(ctx context.Context, r Reader, keys ...string) (any, error) {
 	var n = len(keys) - 1
 
 	if n < 0 {
@@ -51,10 +54,10 @@ func Get(r Reader, keys ...string) (any, error) {
 	return PrefixedReader{
 		Key: keys[:n],
 		R:   r,
-	}.SafeGet(keys[n])
+	}.SafeGet(ctx, keys[n])
 }
 
-func Set(w Writer, v any, keys ...string) (bool, error) {
+func Set(ctx context.Context, w Writer, v any, keys ...string) (bool, error) {
 	var n = len(keys) - 1
 
 	if n < 0 {
@@ -67,10 +70,10 @@ func Set(w Writer, v any, keys ...string) (bool, error) {
 	return PrefixedWriter{
 		Key: keys[:n],
 		W:   w,
-	}.SafeSet(keys[n], v)
+	}.SafeSet(ctx, keys[n], v)
 }
 
-func Put(w Writer, hint Type, keys ...string) (Writer, error) {
+func Put(ctx context.Context, w Writer, hint Type, keys ...string) (Writer, error) {
 	var n = len(keys) - 1
 
 	if n < 0 {
@@ -83,10 +86,10 @@ func Put(w Writer, hint Type, keys ...string) (Writer, error) {
 	return PrefixedWriter{
 		Key: keys[:n],
 		W:   w,
-	}.SafePut(keys[n], hint)
+	}.SafePut(ctx, keys[n], hint)
 }
 
-func Del(w Writer, keys ...string) error {
+func Del(ctx context.Context, w Writer, keys ...string) error {
 	var n = len(keys) - 1
 
 	if n < 0 {
@@ -99,7 +102,7 @@ func Del(w Writer, keys ...string) error {
 	return PrefixedWriter{
 		Key: keys[:n],
 		W:   w,
-	}.SafeDel(keys[n])
+	}.SafeDel(ctx, keys[n])
 
 }
 

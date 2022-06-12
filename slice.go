@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -21,12 +22,12 @@ func (s *Slice) Type() Type {
 	return TypeSlice
 }
 
-func (s *Slice) Get(key string) (any, bool) {
-	v, err := s.SafeGet(key)
+func (s *Slice) Get(ctx context.Context, key string) (any, bool) {
+	v, err := s.SafeGet(ctx, key)
 	return v, err == nil
 }
 
-func (s *Slice) SafeGet(key string) (any, error) {
+func (s *Slice) SafeGet(ctx context.Context, key string) (any, error) {
 	n, err := strconv.Atoi(key)
 	if err != nil {
 		return nil, &Error{
@@ -56,13 +57,13 @@ func (s *Slice) SafeGet(key string) (any, error) {
 	}
 }
 
-func (s *Slice) List() []string {
+func (s *Slice) List(ctx context.Context) []string {
 	keys := make([]string, 0, s.v.Len())
-	s.ListTo(&keys)
+	s.ListTo(ctx, &keys)
 	return keys
 }
 
-func (s *Slice) ListTo(keys *[]string) {
+func (s *Slice) ListTo(ctx context.Context, keys *[]string) {
 	for i := 0; i < s.v.Len(); i++ {
 		*keys = append(*keys, strconv.Itoa(i))
 	}

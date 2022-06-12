@@ -1,6 +1,7 @@
 package types
 
 import (
+	"context"
 	"errors"
 	"strconv"
 
@@ -20,38 +21,38 @@ func (s Slice) Type() Type {
 	return TypeSlice
 }
 
-func (s Slice) Get(key string) (any, bool) {
-	v, err := s.SafeGet(key)
+func (s Slice) Get(ctx context.Context, key string) (any, bool) {
+	v, err := s.SafeGet(ctx, key)
 	return tryMake(v), err == nil
 }
 
-func (s Slice) List() []string {
+func (s Slice) List(ctx context.Context) []string {
 	keys := make([]string, 0, len(s))
-	s.ListTo(&keys)
+	s.ListTo(ctx, &keys)
 	return keys
 }
 
-func (s Slice) ListTo(keys *[]string) {
+func (s Slice) ListTo(ctx context.Context, keys *[]string) {
 	for i := range s {
 		*keys = append(*keys, strconv.Itoa(i))
 	}
 }
 
-func (s *Slice) Del(key string) bool {
-	return s.SafeDel(key) == nil
+func (s *Slice) Del(ctx context.Context, key string) bool {
+	return s.SafeDel(ctx, key) == nil
 }
 
-func (s *Slice) Set(key string, value any) bool {
-	previous, _ := s.SafeSet(key, value)
+func (s *Slice) Set(ctx context.Context, key string, value any) bool {
+	previous, _ := s.SafeSet(ctx, key, value)
 	return previous
 }
 
-func (s *Slice) Put(key string, hint Type) Writer {
-	w, _ := s.SafePut(key, hint)
+func (s *Slice) Put(ctx context.Context, key string, hint Type) Writer {
+	w, _ := s.SafePut(ctx, key, hint)
 	return w
 }
 
-func (s Slice) SafeGet(key string) (value any, err error) {
+func (s Slice) SafeGet(ctx context.Context, key string) (value any, err error) {
 	n, err := s.index(key, "Get")
 	if err != nil {
 		return nil, err
@@ -60,7 +61,7 @@ func (s Slice) SafeGet(key string) (value any, err error) {
 	return tryMake(s[n]), nil
 }
 
-func (s *Slice) SafeDel(key string) error {
+func (s *Slice) SafeDel(ctx context.Context, key string) error {
 	n, err := s.index(key, "Del")
 	if err != nil {
 		return err
@@ -71,7 +72,7 @@ func (s *Slice) SafeDel(key string) error {
 	return nil
 }
 
-func (s *Slice) SafeSet(key string, value any) (previous bool, err error) {
+func (s *Slice) SafeSet(ctx context.Context, key string, value any) (previous bool, err error) {
 	n, err := s.index(key, "Set")
 	if err != nil && (!errors.Is(err, ErrOutOfBounds) || n < 0) {
 		return false, err
@@ -87,7 +88,7 @@ func (s *Slice) SafeSet(key string, value any) (previous bool, err error) {
 	return previous, nil
 }
 
-func (s *Slice) SafePut(key string, hint Type) (Writer, error) {
+func (s *Slice) SafePut(ctx context.Context, key string, hint Type) (Writer, error) {
 	n, err := s.index(key, "Put")
 	if err != nil && (!errors.Is(err, ErrOutOfBounds) || n < 0) {
 		return nil, err

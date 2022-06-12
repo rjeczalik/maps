@@ -1,5 +1,7 @@
 package objects
 
+import "context"
+
 type teeReader struct {
 	R Reader
 	W Writer
@@ -40,13 +42,13 @@ func (tr *teeReader) Type() Type {
 	return tr.R.Type()
 }
 
-func (tr *teeReader) Get(key string) (any, bool) {
-	v, ok := tr.R.Get(key)
+func (tr *teeReader) Get(ctx context.Context, key string) (any, bool) {
+	v, ok := tr.R.Get(ctx, key)
 	if !ok {
 		return nil, false
 	}
 
-	v, err := tr.tee(v, key)
+	v, err := tr.tee(ctx, v, key)
 	if err != nil {
 		return nil, false
 	}
@@ -54,18 +56,18 @@ func (tr *teeReader) Get(key string) (any, bool) {
 	return v, true
 }
 
-func (tr *teeReader) SafeGet(key string) (any, error) {
-	v, err := tr.R.(SafeReader).SafeGet(key)
+func (tr *teeReader) SafeGet(ctx context.Context, key string) (any, error) {
+	v, err := tr.R.(SafeReader).SafeGet(ctx, key)
 	if err != nil {
 		return nil, err
 	}
 
-	return tr.tee(v, key)
+	return tr.tee(ctx, v, key)
 }
 
-func (tr *teeReader) tee(v any, key string) (any, error) {
+func (tr *teeReader) tee(ctx context.Context, v any, key string) (any, error) {
 	if r, ok := tryMake(v).(Reader); ok {
-		w, err := Put(tr.W, r.Type(), key)
+		w, err := Put(ctx, tr.W, r.Type(), key)
 		if err != nil {
 			return nil, err
 		}
@@ -73,17 +75,17 @@ func (tr *teeReader) tee(v any, key string) (any, error) {
 		return TeeReader(r, w), nil
 	}
 
-	if _, err := Set(tr.W, v, key); err != nil {
+	if _, err := Set(ctx, tr.W, v, key); err != nil {
 		return nil, err
 	}
 
 	return v, nil
 }
 
-func (tr *teeReader) List() []string {
-	return tr.R.List()
+func (tr *teeReader) List(ctx context.Context) []string {
+	return tr.R.List(ctx)
 }
 
-func (tr *teeReader) ListTo(keys *[]string) {
-	tr.R.(ListerTo).ListTo(keys)
+func (tr *teeReader) ListTo(ctx context.Context, keys *[]string) {
+	tr.R.(ListerTo).ListTo(ctx, keys)
 }

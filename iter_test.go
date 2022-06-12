@@ -1,6 +1,7 @@
 package objects_test
 
 import (
+	"context"
 	"testing"
 
 	"rafal.dev/objects"
@@ -10,7 +11,10 @@ import (
 )
 
 func TestIter(t *testing.T) {
-	r := objects.Make(newX())
+	var (
+		r   = objects.Make(newX())
+		ctx = context.Background()
+	)
 
 	cases := map[string]struct {
 		it   objects.Iter
@@ -34,7 +38,7 @@ func TestIter(t *testing.T) {
 				got  = make(Pairs, 0, len(want))
 			)
 
-			for it.Next() {
+			for it.Next(ctx) {
 				if it.Leaf() {
 					got = got.append(it)
 				}

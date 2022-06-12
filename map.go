@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 )
@@ -19,12 +20,12 @@ func (m *Map) Type() Type {
 	return TypeMap
 }
 
-func (m *Map) Get(key string) (any, bool) {
-	v, err := m.SafeGet(key)
+func (m *Map) Get(ctx context.Context, key string) (any, bool) {
+	v, err := m.SafeGet(ctx, key)
 	return v, err == nil
 }
 
-func (m *Map) SafeGet(key string) (any, error) {
+func (m *Map) SafeGet(ctx context.Context, key string) (any, error) {
 	var (
 		t = m.v.Type().Key()
 		k = reflect.ValueOf(key)
@@ -55,13 +56,13 @@ func (m *Map) SafeGet(key string) (any, error) {
 
 var typstr = reflect.TypeOf(string(""))
 
-func (m *Map) List() []string {
+func (m *Map) List(ctx context.Context) []string {
 	var keys []string
-	m.ListTo(&keys)
+	m.ListTo(ctx, &keys)
 	return keys
 }
 
-func (m *Map) ListTo(keys *[]string) {
+func (m *Map) ListTo(ctx context.Context, keys *[]string) {
 	for _, k := range m.v.MapKeys() {
 		var key string
 		if k.CanConvert(typstr) {

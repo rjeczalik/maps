@@ -1,6 +1,9 @@
 package types
 
-import "sort"
+import (
+	"context"
+	"sort"
+)
 
 type Map map[string]any
 
@@ -13,37 +16,37 @@ func (m Map) Type() Type {
 	return TypeMap
 }
 
-func (m Map) Get(key string) (any, bool) {
+func (m Map) Get(ctx context.Context, key string) (any, bool) {
 	v, ok := m[key]
 	return tryMake(v), ok
 }
 
-func (m Map) List() []string {
+func (m Map) List(ctx context.Context) []string {
 	keys := make([]string, 0, len(m))
-	m.ListTo(&keys)
+	m.ListTo(ctx, &keys)
 	return keys
 }
 
-func (m Map) ListTo(keys *[]string) {
+func (m Map) ListTo(ctx context.Context, keys *[]string) {
 	for k := range m {
 		*keys = append(*keys, k)
 	}
 	sort.Strings(*keys)
 }
 
-func (m Map) Del(key string) bool {
+func (m Map) Del(ctx context.Context, key string) bool {
 	_, ok := m[key]
 	delete(m, key)
 	return ok
 }
 
-func (m Map) Set(key string, value any) bool {
+func (m Map) Set(ctx context.Context, key string, value any) bool {
 	_, ok := m[key]
 	m[key] = value
 	return ok
 }
 
-func (m Map) Put(key string, hint Type) Writer {
+func (m Map) Put(ctx context.Context, key string, hint Type) Writer {
 	v, ok := m[key].(Writer)
 	if !ok {
 		v = makeOr(hint, make(Map))

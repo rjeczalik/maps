@@ -1,10 +1,13 @@
 package objects
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 func Walk(r Reader) Iter {
 	return &iter{
-		queue: newQueue(r),
+		queue: newQueue(context.TODO(), r),
 	}
 }
 
@@ -22,8 +25,8 @@ type elm struct {
 	leaf   bool
 }
 
-func newQueue(r Reader) []elm {
-	return []elm{{parent: r, left: r.List()}}
+func newQueue(ctx context.Context, r Reader) []elm {
+	return []elm{{parent: r, left: r.List(ctx)}}
 }
 
 type iter struct {
@@ -35,7 +38,7 @@ type iter struct {
 
 var _ Iter = (*iter)(nil)
 
-func (it *iter) Next() bool {
+func (it *iter) Next(ctx context.Context) bool {
 	if it.err != nil || len(it.queue) == 0 {
 		it.done = true
 		return false
@@ -55,13 +58,13 @@ func (it *iter) Next() bool {
 
 	it.it.key = clone(it.it.key, k)
 
-	if it.it.v, it.err = Get(it.it.parent, k); it.err != nil {
+	if it.it.v, it.err = Get(ctx, it.it.parent, k); it.err != nil {
 		it.done = true
 		return false
 	}
 
 	if r, ok := it.it.v.(Reader); ok {
-		it.queue = append(it.queue, elm{parent: r, key: it.it.key, left: r.List()})
+		it.queue = append(it.queue, elm{parent: r, key: it.it.key, left: r.List(ctx)})
 	} else {
 		it.it.leaf = true
 	}
@@ -101,8 +104,8 @@ type revIter struct {
 
 var _ Iter = (*revIter)(nil)
 
-func (rit *revIter) Next() bool {
-	for rit.orig.Next() {
+func (rit *revIter) Next(ctx context.Context) bool {
+	for rit.orig.Next(ctx) {
 		rit.rev = append(rit.rev, elm{
 			parent: rit.orig.Parent(),
 			leaf:   rit.orig.Leaf(),

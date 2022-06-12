@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -28,12 +29,12 @@ func (s *Struct) Type() Type {
 	return TypeStruct
 }
 
-func (s *Struct) Get(key string) (any, bool) {
-	v, err := s.SafeGet(key)
+func (s *Struct) Get(ctx context.Context, key string) (any, bool) {
+	v, err := s.SafeGet(ctx, key)
 	return v, err == nil
 }
 
-func (s *Struct) SafeGet(key string) (any, error) {
+func (s *Struct) SafeGet(ctx context.Context, key string) (any, error) {
 	switch v := s.v.FieldByName(key); {
 	case !v.IsValid() || v.IsZero():
 		return nil, &Error{
@@ -53,13 +54,13 @@ func (s *Struct) SafeGet(key string) (any, error) {
 	}
 }
 
-func (s *Struct) List() []string {
+func (s *Struct) List(ctx context.Context) []string {
 	var keys []string
-	s.ListTo(&keys)
+	s.ListTo(ctx, &keys)
 	return keys
 }
 
-func (s *Struct) ListTo(keys *[]string) {
+func (s *Struct) ListTo(ctx context.Context, keys *[]string) {
 	for _, f := range reflect.VisibleFields(s.v.Type()) {
 		*keys = append(*keys, s.options().StructField(f))
 	}

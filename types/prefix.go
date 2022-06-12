@@ -1,5 +1,7 @@
 package types
 
+import "context"
+
 type PrefixedReader struct {
 	Key Key
 	R   Reader
@@ -51,26 +53,26 @@ func Prefix(iface Interface, keys ...string) Prefixed {
 	}
 }
 
-func (pr PrefixedReader) Get(key string) (value any, ok bool) {
-	v, err := pr.SafeGet(key)
+func (pr PrefixedReader) Get(ctx context.Context, key string) (value any, ok bool) {
+	v, err := pr.SafeGet(ctx, key)
 	return v, err == nil
 }
 
-func (pr PrefixedReader) List() []string {
-	r, err := pr.base("List")
+func (pr PrefixedReader) List(ctx context.Context) []string {
+	r, err := pr.base(ctx, "List")
 	if err != nil {
 		return nil
 	}
 
-	return r.List()
+	return r.List(ctx)
 }
 
 func (pr PrefixedReader) Type() Type {
 	return pr.R.Type()
 }
 
-func (pr PrefixedReader) SafeGet(key string) (any, error) {
-	r, err := pr.base("Get")
+func (pr PrefixedReader) SafeGet(ctx context.Context, key string) (any, error) {
+	r, err := pr.base(ctx, "Get")
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +82,7 @@ func (pr PrefixedReader) SafeGet(key string) (any, error) {
 	)
 
 	if sr, ok := r.(SafeReader); ok {
-		if v, err = sr.SafeGet(key); err != nil {
+		if v, err = sr.SafeGet(ctx, key); err != nil {
 			return nil, &Error{
 				Op:  "Get",
 				Key: append(pr.Key, key),
@@ -88,7 +90,7 @@ func (pr PrefixedReader) SafeGet(key string) (any, error) {
 				Err: err,
 			}
 		}
-	} else if v, ok = r.Get(key); !ok {
+	} else if v, ok = r.Get(ctx, key); !ok {
 		return nil, &Error{
 			Op:  "Get",
 			Key: append(pr.Key, key),
@@ -100,7 +102,7 @@ func (pr PrefixedReader) SafeGet(key string) (any, error) {
 	return v, nil
 }
 
-func (pr PrefixedReader) base(op string) (Reader, error) {
+func (pr PrefixedReader) base(ctx context.Context, op string) (Reader, error) {
 	var (
 		r   = pr.R
 		v   any
@@ -110,7 +112,7 @@ func (pr PrefixedReader) base(op string) (Reader, error) {
 
 	for i, key := range pr.Key {
 		if sr, ok := r.(SafeReader); ok {
-			if v, err = sr.SafeGet(key); err != nil {
+			if v, err = sr.SafeGet(ctx, key); err != nil {
 				return nil, &Error{
 					Op:  op,
 					Key: pr.Key[:i+1],
@@ -118,7 +120,7 @@ func (pr PrefixedReader) base(op string) (Reader, error) {
 					Err: err,
 				}
 			}
-		} else if v, ok = r.Get(key); !ok {
+		} else if v, ok = r.Get(ctx, key); !ok {
 			return nil, &Error{
 				Op:  op,
 				Key: pr.Key[:i+1],
@@ -162,34 +164,34 @@ func (pr PrefixedReader) reader() Reader {
 	return nil
 }
 
-func (pw PrefixedWriter) Del(key string) bool {
-	return pw.SafeDel(key) == nil
+func (pw PrefixedWriter) Del(ctx context.Context, key string) bool {
+	return pw.SafeDel(ctx, key) == nil
 }
 
-func (pw PrefixedWriter) Set(key string, value any) bool {
-	ok, _ := pw.SafeSet(key, value)
+func (pw PrefixedWriter) Set(ctx context.Context, key string, value any) bool {
+	ok, _ := pw.SafeSet(ctx, key, value)
 	return ok
 }
 
-func (pw PrefixedWriter) Put(key string, hint Type) Writer {
-	w, _ := pw.SafePut(key, hint)
+func (pw PrefixedWriter) Put(ctx context.Context, key string, hint Type) Writer {
+	w, _ := pw.SafePut(ctx, key, hint)
 	return w
 }
 
-func (pw PrefixedWriter) SafeDel(key string) error {
+func (pw PrefixedWriter) SafeDel(ctx context.Context, key string) error {
 	pr, err := pw.reader("Del")
 	if err != nil {
 		return err
 	}
 
-	r, err := pr.base("Del")
+	r, err := pr.base(ctx, "Del")
 	if err != nil {
 		return err
 	}
 
 	switch w := r.(type) {
 	case SafeWriter:
-		if err := w.SafeDel(key); err != nil {
+		if err := w.SafeDel(ctx, key); err != nil {
 			return &Error{
 				Op:  "Del",
 				Key: append(pw.Key, key),
@@ -197,7 +199,7 @@ func (pw PrefixedWriter) SafeDel(key string) error {
 			}
 		}
 	case Writer:
-		if ok := w.Del(key); !ok {
+		if ok := w.Del(ctx, key); !ok {
 			return &Error{
 				Op:  "Del",
 				Key: append(pw.Key, key),
@@ -217,20 +219,20 @@ func (pw PrefixedWriter) SafeDel(key string) error {
 	return nil
 }
 
-func (pw PrefixedWriter) SafeSet(key string, value any) (bool, error) {
+func (pw PrefixedWriter) SafeSet(ctx context.Context, key string, value any) (bool, error) {
 	pr, err := pw.reader("Set")
 	if err != nil {
 		return false, err
 	}
 
-	r, err := pr.base("Set")
+	r, err := pr.base(ctx, "Set")
 	if err != nil {
 		return false, err
 	}
 
 	switch w := r.(type) {
 	case SafeWriter:
-		ok, err := w.SafeSet(key, value)
+		ok, err := w.SafeSet(ctx, key, value)
 		if err != nil {
 			return false, &Error{
 				Op:  "Set",
@@ -241,7 +243,7 @@ func (pw PrefixedWriter) SafeSet(key string, value any) (bool, error) {
 
 		return ok, nil
 	case Writer:
-		return w.Set(key, value), nil
+		return w.Set(ctx, key, value), nil
 	default:
 		return false, &Error{
 			Op:   "Set",
@@ -253,7 +255,7 @@ func (pw PrefixedWriter) SafeSet(key string, value any) (bool, error) {
 	}
 }
 
-func (pw PrefixedWriter) SafePut(key string, hint Type) (Writer, error) {
+func (pw PrefixedWriter) SafePut(ctx context.Context, key string, hint Type) (Writer, error) {
 	var (
 		w, k    = pw.writer()
 		normkey = append(k, key)
@@ -262,7 +264,7 @@ func (pw PrefixedWriter) SafePut(key string, hint Type) (Writer, error) {
 
 	for i, key := range normkey {
 		if sw, ok := w.(SafeWriter); ok {
-			if w, err = sw.SafePut(key, hint); err != nil {
+			if w, err = sw.SafePut(ctx, key, hint); err != nil {
 				return nil, &Error{
 					Op:  "Put",
 					Key: normkey[:i+1],
@@ -271,7 +273,7 @@ func (pw PrefixedWriter) SafePut(key string, hint Type) (Writer, error) {
 				}
 			}
 		} else {
-			w = w.Put(key, hint)
+			w = w.Put(ctx, key, hint)
 		}
 	}
 
