@@ -1,58 +1,52 @@
 package mergelist
 
 import (
-	"rafal.dev/objects"
+	"net/url"
+	"strconv"
 )
 
-type Func func(parent List, index int)
+type Elem interface {
+	~string | ~*url.URL
+}
 
 type List []struct {
-	List List
-	Map  objects.Map
+	Next *List
+	Key  Key
+	URL  *url.URL
+	Map  Map
 }
 
-func (l List) Set(key objects.Key, v any) error {
-	return nil
+var (
+// _ Reader = (*List)(nil)
+// _ Meta   = (*List)(nil)
+)
+
+func (l List) Type() Type {
+	return TypeSlice
 }
 
-func (l List) Merge() objects.Map {
-	return objects.Map{} // todo
+func (l List) Len() int {
+	return len(l)
 }
 
-func (l List) Walk(fn Func) {
-	type elm struct {
-		parent List
-		keys   []int
-	}
-
-	var (
-		queue = []elm{{parent: l, keys: l.keys()}}
-		index int
-		it    elm
-	)
-
-	for len(queue) != 0 {
-		it, queue = queue[len(queue)-1], queue[:len(queue)-1]
-		index, it.keys = it.keys[0], it.keys[1:]
-
-		fn(it.parent, index)
-
-		if len(it.keys) != 0 {
-			queue = append(queue, it)
-		}
-
-		if list := it.parent[index].List; len(list) != 0 {
-			queue = append(queue, elm{parent: list, keys: list.keys()})
+func (l List) index(key, op string) (int, error) {
+	n, err := strconv.Atoi(key)
+	if err != nil {
+		return 0, &Error{
+			Op:  op,
+			Key: []string{key},
+			Err: err,
 		}
 	}
-}
-
-func (l List) keys() []int {
-	n := make([]int, 0, len(l))
-
-	for i := range l {
-		n = append(n, i)
+	if n < 0 || n >= l.Len() {
+		return n, &Error{
+			Op:   op,
+			Key:  []string{key},
+			Got:  n,
+			Want: l.Len(),
+			Err:  ErrOutOfBounds,
+		}
 	}
 
-	return n
+	return n, nil
 }
