@@ -1,58 +1,160 @@
 package mergelist
 
 import (
-	"rafal.dev/objects"
+	"errors"
+	"net/url"
+	"strconv"
+
+	"golang.org/x/exp/slices"
 )
 
-type Func func(parent List, index int)
-
 type List []struct {
-	List List
-	Map  objects.Map
+	Next *List
+	Key  Key
+	URL  *url.URL
+	Map  Map
 }
 
-func (l List) Set(key objects.Key, v any) error {
+var (
+	_ all = (*List)(nil)
+)
+
+func (l List) Type() Type {
+	return TypeSlice
+}
+
+func (l List) Len() int {
+	return len(l)
+}
+
+func (l List) Get(key string) (any, bool) {
+	v, err := l.SafeGet(key)
+	return v, err == nil
+}
+
+func (l List) SafeGet(key string) (any, error) {
+	n, err := l.index(key, "Get")
+	if err != nil {
+		return nil, err
+	}
+
+	switch next, m, uri := l[n].Next, l[n].Map, l[n].URL; {
+	case next != nil:
+		return next, nil
+	case m != nil:
+		return m, nil
+	case uri != nil:
+		return uri, nil
+	default:
+		return nil, &Error{
+			Op:  "Get",
+			Key: []string{key},
+			Got: l[n],
+			Err: errors.New("empty list item"),
+		}
+	}
+}
+
+func (l List) List() []string {
+	keys := make([]string, 0, l.Len())
+	l.ListTo(&keys)
+	return keys
+}
+
+func (l List) ListTo(keys *[]string) {
+	for i := 0; i < l.Len(); i++ {
+		*keys = append(*keys, strconv.Itoa(i))
+	}
+}
+
+func (l *List) Del(key string) (ok bool) {
+	return l.SafeDel(key) == nil
+}
+
+func (l *List) Set(key string, value any) (previous bool) {
+	previous, _ = l.SafeSet(key, value)
+	return previous
+}
+
+func (l *List) Put(key string, hint Type) Writer {
+	w, _ := l.SafePut(key, hint)
+	return w
+}
+
+func (l *List) SafeDel(key string) error {
+	n, err := l.index(key, "Del")
+	if err != nil {
+		return err
+	}
+
+	*l = slices.Delete(*l, n, n+1)
+
 	return nil
 }
 
-func (l List) Merge() objects.Map {
-	return objects.Map{} // todo
-}
-
-func (l List) Walk(fn Func) {
-	type elm struct {
-		parent List
-		keys   []int
+func (l *List) SafeSet(key string, value any) (previous bool, err error) {
+	n, err := l.index(key, "Set")
+	if err != nil && (!errors.Is(err, ErrOutOfBounds) || n < 0) {
+		return false, err
 	}
 
-	var (
-		queue = []elm{{parent: l, keys: l.keys()}}
-		index int
-		it    elm
-	)
+	if n >= l.Len() {
+		*l = append(*l, make(List, n-l.Len()+1)...)
+	} else {
+		previous = true
+	}
 
-	for len(queue) != 0 {
-		it, queue = queue[len(queue)-1], queue[:len(queue)-1]
-		index, it.keys = it.keys[0], it.keys[1:]
-
-		fn(it.parent, index)
-
-		if len(it.keys) != 0 {
-			queue = append(queue, it)
+	switch v := value.(type) {
+	case string:
+		u, err := url.Parse(v)
+		if err != nil {
+			return false, &Error{
+				Op:  "Set",
+				Key: []string{key},
+				Got: v,
+				Err: err,
+			}
 		}
 
-		if list := it.parent[index].List; len(list) != 0 {
-			queue = append(queue, elm{parent: list, keys: list.keys()})
-		}
+		(*l)[n].URL = u
+	case []any:
+		// todo
+	case map[string]any:
+		// todo
 	}
+
+	return false, nil
 }
 
-func (l List) keys() []int {
-	n := make([]int, 0, len(l))
-
-	for i := range l {
-		n = append(n, i)
+func (l *List) SafePut(key string, hint Type) (Writer, error) {
+	n, err := l.index(key, "Put")
+	if err != nil {
+		return nil, err
 	}
 
-	return n
+	_ = n // todo
+
+	return nil, nil
+}
+
+func (l List) index(key, op string) (int, error) {
+	n, err := strconv.Atoi(key)
+	if err != nil {
+		return 0, &Error{
+			Op:  op,
+			Key: []string{key},
+			Err: err,
+		}
+	}
+	if n < 0 || n >= l.Len() {
+		return n, &Error{
+			Op:   op,
+			Key:  []string{key},
+			Got:  n,
+			Want: l.Len(),
+			Err:  ErrOutOfBounds,
+		}
+	}
+
+	return n, nil
 }
