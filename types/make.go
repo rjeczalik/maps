@@ -3,9 +3,9 @@ package types
 type Type string
 
 const (
-	MapType    Type = "Map"
-	SliceType  Type = "Slice"
-	StructType Type = "Struct"
+	TypeMap    Type = "Map"
+	TypeSlice  Type = "Slice"
+	TypeStruct Type = "Struct"
 )
 
 func Make(v any) Interface {
@@ -37,9 +37,9 @@ func tryMake(v any) any {
 
 func makeOr(hint Type, def Interface) Interface {
 	switch hint {
-	case MapType, StructType:
+	case TypeMap, TypeStruct:
 		return make(Map)
-	case SliceType:
+	case TypeSlice:
 		return &Slice{}
 	default:
 		return def

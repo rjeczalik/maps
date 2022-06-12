@@ -10,7 +10,7 @@ var (
 )
 
 func (m Map) Type() Type {
-	return MapType
+	return TypeMap
 }
 
 func (m Map) Get(key string) (any, bool) {

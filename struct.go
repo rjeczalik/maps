@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+var DefaultOptions = &Options{
+	StructField: DefaultField,
+}
+
+type Options struct {
+	StructField func(reflect.StructField) string
+}
+
 type Struct struct {
 	v reflect.Value
 }
@@ -17,7 +25,7 @@ var (
 )
 
 func (s *Struct) Type() Type {
-	return StructType
+	return TypeStruct
 }
 
 func (s *Struct) Get(key string) (any, bool) {
@@ -27,14 +35,13 @@ func (s *Struct) Get(key string) (any, bool) {
 
 func (s *Struct) SafeGet(key string) (any, error) {
 	switch v := s.v.FieldByName(key); {
-	case v.IsZero():
+	case !v.IsValid() || v.IsZero():
 		return nil, &Error{
 			Op:  "Get",
 			Key: []string{key},
 			Err: ErrNotFound,
 		}
 	case !v.CanInterface():
-		fmt.Println("XD", key)
 		return nil, &Error{
 			Op:  "Get",
 			Key: []string{key},
@@ -54,11 +61,15 @@ func (s *Struct) List() []string {
 
 func (s *Struct) ListTo(keys *[]string) {
 	for _, f := range reflect.VisibleFields(s.v.Type()) {
-		*keys = append(*keys, f.Name)
+		*keys = append(*keys, s.options().StructField(f))
 	}
 }
 
-func field(f reflect.StructField) string {
+func (s *Struct) options() *Options {
+	return DefaultOptions
+}
+
+func DefaultField(f reflect.StructField) string {
 	return nonempty(
 		tag(f.Tag, "object"),
 		tag(f.Tag, "json"),

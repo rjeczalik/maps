@@ -65,7 +65,7 @@ func (tr *teeReader) SafeGet(key string) (any, error) {
 
 func (tr *teeReader) tee(v any, key string) (any, error) {
 	if r, ok := tryMake(v).(Reader); ok {
-		w, err := put(tr.W, r.Type(), key)
+		w, err := Put(tr.W, r.Type(), key)
 		if err != nil {
 			return nil, err
 		}
@@ -73,7 +73,7 @@ func (tr *teeReader) tee(v any, key string) (any, error) {
 		return TeeReader(r, w), nil
 	}
 
-	if _, err := set(tr.W, v, key); err != nil {
+	if _, err := Set(tr.W, v, key); err != nil {
 		return nil, err
 	}
 

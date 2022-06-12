@@ -30,3 +30,9 @@ type Interface interface {
 	Reader
 	Writer
 }
+
+type SafeInterface interface {
+	Interface
+	SafeReader
+	SafeWriter
+}

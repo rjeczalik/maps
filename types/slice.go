@@ -17,7 +17,7 @@ var (
 )
 
 func (s Slice) Type() Type {
-	return SliceType
+	return TypeSlice
 }
 
 func (s Slice) Get(key string) (any, bool) {

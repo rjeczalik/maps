@@ -1,44 +1,52 @@
 package objects_test
 
 import (
-	"fmt"
 	"testing"
 
 	"rafal.dev/objects"
+	"rafal.dev/objects/internal/misc"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestIter(t *testing.T) {
-	var (
-		x  = newX()
-		r  = objects.Make(x)
-		it = objects.Walk(r)
-	)
+	r := objects.Make(newX())
 
-	for it.Next() {
-		if it.Leaf() {
-			fmt.Printf("%v=%#v\n", it.Key(), it.Value())
-		}
+	cases := map[string]struct {
+		it   objects.Iter
+		want Pairs
+	}{
+		"iter": {
+			it:   objects.Walk(r),
+			want: pairX(),
+		},
+		"revIter": {
+			it:   objects.Reverse(objects.Walk(r)),
+			want: misc.Reverse(pairX()),
+		},
 	}
 
-	if err := it.Err(); err != nil {
-		t.Fatalf("Err()=%+v", err)
-	}
-}
+	for name, cas := range cases {
+		t.Run(name, func(t *testing.T) {
+			var (
+				it   = cas.it
+				want = cas.want
+				got  = make(Pairs, 0, len(want))
+			)
 
-func TestRevIter(t *testing.T) {
-	var (
-		x   = newX()
-		r   = objects.Make(x)
-		rit = objects.ReverseWalk(r)
-	)
+			for it.Next() {
+				if it.Leaf() {
+					got = got.append(it)
+				}
+			}
 
-	for rit.Next() {
-		if rit.Leaf() {
-			fmt.Printf("%v=%#v\n", rit.Key(), rit.Value())
-		}
-	}
+			if err := it.Err(); err != nil {
+				t.Fatalf("Err()=%+v", err)
+			}
 
-	if err := rit.Err(); err != nil {
-		t.Fatalf("Err()=%+v", err)
+			if !cmp.Equal(got, want) {
+				t.Fatalf("got != want:\n%s", cmp.Diff(got, want))
+			}
+		})
 	}
 }

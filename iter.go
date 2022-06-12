@@ -1,23 +1,16 @@
 package objects
 
-type Iter interface {
-	Next() bool
-	Parent() Reader
-	Leaf() bool
-	Key() Key
-	Value() any
-	Err() error
-}
+import "errors"
 
 func Walk(r Reader) Iter {
 	return &iter{
-		queue: []elm{{parent: r, left: r.List()}},
+		queue: newQueue(r),
 	}
 }
 
-func ReverseWalk(r Reader) Iter {
+func Reverse(it Iter) Iter {
 	return &revIter{
-		queue: []elm{{parent: r, left: r.List()}},
+		orig: it,
 	}
 }
 
@@ -29,16 +22,22 @@ type elm struct {
 	leaf   bool
 }
 
+func newQueue(r Reader) []elm {
+	return []elm{{parent: r, left: r.List()}}
+}
+
 type iter struct {
 	it    elm
 	queue []elm
+	done  bool
 	err   error
 }
 
 var _ Iter = (*iter)(nil)
 
 func (it *iter) Next() bool {
-	if len(it.queue) == 0 {
+	if it.err != nil || len(it.queue) == 0 {
+		it.done = true
 		return false
 	}
 
@@ -56,7 +55,8 @@ func (it *iter) Next() bool {
 
 	it.it.key = clone(it.it.key, k)
 
-	if it.it.v, it.err = get(it.it.parent, it.it.key...); it.err != nil {
+	if it.it.v, it.err = Get(it.it.parent, k); it.err != nil {
+		it.done = true
 		return false
 	}
 
@@ -86,50 +86,38 @@ func (it *iter) Value() any {
 }
 
 func (it *iter) Err() error {
+	if !it.done {
+		return ErrNotDone
+	}
 	return it.err
 }
 
 type revIter struct {
-	it    elm
-	queue []elm
-	rev   []elm
-	err   error
+	orig Iter
+	it   elm
+	rev  []elm
+	done bool
 }
 
 var _ Iter = (*revIter)(nil)
 
 func (rit *revIter) Next() bool {
-	for len(rit.queue) != 0 {
-		var (
-			n    = len(rit.queue) - 1
-			k    string
-			it   elm
-			leaf bool
-		)
+	for rit.orig.Next() {
+		rit.rev = append(rit.rev, elm{
+			parent: rit.orig.Parent(),
+			leaf:   rit.orig.Leaf(),
+			key:    rit.orig.Key(),
+			v:      rit.orig.Value(),
+		})
+	}
 
-		it, rit.queue = rit.queue[n], rit.queue[:n]
-		k, it.left = it.left[0], it.left[1:]
-
-		if len(it.left) != 0 {
-			rit.queue = append(rit.queue, it)
-		}
-
-		it.key = clone(it.key, k)
-
-		if it.v, rit.err = get(it.parent, it.key...); rit.err != nil {
-			return false
-		}
-
-		if r, ok := it.v.(Reader); ok {
-			rit.queue = append(rit.queue, elm{parent: r, key: it.key, left: r.List()})
-		} else {
-			leaf = true
-		}
-
-		rit.rev = append(rit.rev, elm{parent: it.parent, key: it.key, v: it.v, leaf: leaf})
+	if rit.err() != nil {
+		rit.done = true
+		return false
 	}
 
 	if len(rit.rev) == 0 {
+		rit.done = true
 		return false
 	}
 
@@ -159,5 +147,15 @@ func (rit *revIter) Value() any {
 }
 
 func (rit *revIter) Err() error {
-	return rit.err
+	if !rit.done {
+		return ErrNotDone
+	}
+	return rit.err()
+}
+
+func (rit *revIter) err() (err error) {
+	if err = rit.orig.Err(); errors.Is(err, ErrNotDone) {
+		return nil
+	}
+	return err
 }
