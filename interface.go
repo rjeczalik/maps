@@ -2,22 +2,19 @@ package objects
 
 import "rafal.dev/objects/types"
 
-type (
-	Type          = types.Type
-	Reader        = types.Reader
-	SafeReader    = types.SafeReader
-	ListerTo      = types.ListerTo
-	Writer        = types.Writer
-	SafeWriter    = types.SafeWriter
-	Interface     = types.Interface
-	SafeInterface = types.SafeInterface
-	Iter          = types.Iter
-)
-
-const (
+var (
 	TypeMap    = types.TypeMap
 	TypeSlice  = types.TypeSlice
 	TypeStruct = types.TypeStruct
+)
+
+type (
+	Type      = types.Type
+	Reader    = types.Reader
+	Writer    = types.Writer
+	Interface = types.Interface
+	Meta      = types.Meta
+	Iter      = types.Iter
 )
 
 type (

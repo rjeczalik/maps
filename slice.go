@@ -13,21 +13,15 @@ type Slice struct {
 }
 
 var (
-	_ Reader     = (*Slice)(nil)
-	_ SafeReader = (*Slice)(nil)
-	_ ListerTo   = (*Slice)(nil)
+	_ Reader = (*Slice)(nil)
+	_ Meta   = (*Slice)(nil)
 )
 
 func (s *Slice) Type() Type {
 	return TypeSlice
 }
 
-func (s *Slice) Get(ctx context.Context, key string) (any, bool) {
-	v, err := s.SafeGet(ctx, key)
-	return v, err == nil
-}
-
-func (s *Slice) SafeGet(ctx context.Context, key string) (any, error) {
+func (s *Slice) Get(ctx context.Context, key string) (any, error) {
 	n, err := strconv.Atoi(key)
 	if err != nil {
 		return nil, &Error{
@@ -57,14 +51,12 @@ func (s *Slice) SafeGet(ctx context.Context, key string) (any, error) {
 	}
 }
 
-func (s *Slice) List(ctx context.Context) []string {
+func (s *Slice) List(ctx context.Context) ([]string, error) {
 	keys := make([]string, 0, s.v.Len())
-	s.ListTo(ctx, &keys)
-	return keys
-}
 
-func (s *Slice) ListTo(ctx context.Context, keys *[]string) {
 	for i := 0; i < s.v.Len(); i++ {
-		*keys = append(*keys, strconv.Itoa(i))
+		keys = append(keys, strconv.Itoa(i))
 	}
+
+	return keys, nil
 }

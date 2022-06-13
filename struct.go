@@ -20,21 +20,15 @@ type Struct struct {
 }
 
 var (
-	_ Reader     = (*Struct)(nil)
-	_ SafeReader = (*Struct)(nil)
-	_ ListerTo   = (*Struct)(nil)
+	_ Reader = (*Struct)(nil)
+	_ Meta   = (*Struct)(nil)
 )
 
 func (s *Struct) Type() Type {
 	return TypeStruct
 }
 
-func (s *Struct) Get(ctx context.Context, key string) (any, bool) {
-	v, err := s.SafeGet(ctx, key)
-	return v, err == nil
-}
-
-func (s *Struct) SafeGet(ctx context.Context, key string) (any, error) {
+func (s *Struct) Get(ctx context.Context, key string) (any, error) {
 	switch v := s.v.FieldByName(key); {
 	case !v.IsValid() || v.IsZero():
 		return nil, &Error{
@@ -54,16 +48,14 @@ func (s *Struct) SafeGet(ctx context.Context, key string) (any, error) {
 	}
 }
 
-func (s *Struct) List(ctx context.Context) []string {
+func (s *Struct) List(ctx context.Context) ([]string, error) {
 	var keys []string
-	s.ListTo(ctx, &keys)
-	return keys
-}
 
-func (s *Struct) ListTo(ctx context.Context, keys *[]string) {
 	for _, f := range reflect.VisibleFields(s.v.Type()) {
-		*keys = append(*keys, s.options().StructField(f))
+		keys = append(keys, s.options().StructField(f))
 	}
+
+	return keys, nil
 }
 
 func (s *Struct) options() *Options {

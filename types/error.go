@@ -11,6 +11,7 @@ var (
 	ErrNotFound       = errors.New("not found")
 	ErrNotDone        = errors.New("iterator not done")
 	ErrUnexpectedType = errors.New("unexpected type")
+	ErrUnsupported    = errors.New("operation not supported")
 )
 
 type Error struct {

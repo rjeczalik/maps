@@ -54,14 +54,14 @@ func Get(ctx context.Context, r Reader, keys ...string) (any, error) {
 	return PrefixedReader{
 		Key: keys[:n],
 		R:   r,
-	}.SafeGet(ctx, keys[n])
+	}.Get(ctx, keys[n])
 }
 
-func Set(ctx context.Context, w Writer, v any, keys ...string) (bool, error) {
+func Set(ctx context.Context, w Writer, v any, keys ...string) error {
 	var n = len(keys) - 1
 
 	if n < 0 {
-		return false, &Error{
+		return &Error{
 			Op:  "Set",
 			Err: errors.New("keys are empty"),
 		}
@@ -70,7 +70,7 @@ func Set(ctx context.Context, w Writer, v any, keys ...string) (bool, error) {
 	return PrefixedWriter{
 		Key: keys[:n],
 		W:   w,
-	}.SafeSet(ctx, keys[n], v)
+	}.Set(ctx, keys[n], v)
 }
 
 func Put(ctx context.Context, w Writer, hint Type, keys ...string) (Writer, error) {
@@ -86,7 +86,7 @@ func Put(ctx context.Context, w Writer, hint Type, keys ...string) (Writer, erro
 	return PrefixedWriter{
 		Key: keys[:n],
 		W:   w,
-	}.SafePut(ctx, keys[n], hint)
+	}.Put(ctx, keys[n], hint)
 }
 
 func Del(ctx context.Context, w Writer, keys ...string) error {
@@ -102,7 +102,7 @@ func Del(ctx context.Context, w Writer, keys ...string) error {
 	return PrefixedWriter{
 		Key: keys[:n],
 		W:   w,
-	}.SafeDel(ctx, keys[n])
+	}.Del(ctx, keys[n])
 
 }
 

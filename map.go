@@ -11,21 +11,15 @@ type Map struct {
 }
 
 var (
-	_ Reader     = (*Map)(nil)
-	_ SafeReader = (*Map)(nil)
-	_ ListerTo   = (*Map)(nil)
+	_ Reader = (*Map)(nil)
+	_ Meta   = (*Map)(nil)
 )
 
 func (m *Map) Type() Type {
 	return TypeMap
 }
 
-func (m *Map) Get(ctx context.Context, key string) (any, bool) {
-	v, err := m.SafeGet(ctx, key)
-	return v, err == nil
-}
-
-func (m *Map) SafeGet(ctx context.Context, key string) (any, error) {
+func (m *Map) Get(ctx context.Context, key string) (any, error) {
 	var (
 		t = m.v.Type().Key()
 		k = reflect.ValueOf(key)
@@ -56,13 +50,9 @@ func (m *Map) SafeGet(ctx context.Context, key string) (any, error) {
 
 var typstr = reflect.TypeOf(string(""))
 
-func (m *Map) List(ctx context.Context) []string {
+func (m *Map) List(ctx context.Context) ([]string, error) {
 	var keys []string
-	m.ListTo(ctx, &keys)
-	return keys
-}
 
-func (m *Map) ListTo(ctx context.Context, keys *[]string) {
 	for _, k := range m.v.MapKeys() {
 		var key string
 		if k.CanConvert(typstr) {
@@ -71,6 +61,8 @@ func (m *Map) ListTo(ctx context.Context, keys *[]string) {
 			key = fmt.Sprint(k.Interface())
 		}
 
-		*keys = append(*keys, key)
+		keys = append(keys, key)
 	}
+
+	return keys, nil
 }

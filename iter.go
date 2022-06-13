@@ -6,15 +6,11 @@ import (
 )
 
 func Walk(r Reader) Iter {
-	return &iter{
-		queue: newQueue(context.TODO(), r),
-	}
+	return &iter{root: r}
 }
 
 func Reverse(it Iter) Iter {
-	return &revIter{
-		orig: it,
-	}
+	return &revIter{orig: it}
 }
 
 type elm struct {
@@ -25,20 +21,29 @@ type elm struct {
 	leaf   bool
 }
 
-func newQueue(ctx context.Context, r Reader) []elm {
-	return []elm{{parent: r, left: r.List(ctx)}}
-}
-
 type iter struct {
+	root  Reader
 	it    elm
 	queue []elm
 	done  bool
+	init  bool
 	err   error
 }
 
 var _ Iter = (*iter)(nil)
 
 func (it *iter) Next(ctx context.Context) bool {
+	if !it.init {
+		root := elm{parent: it.root}
+
+		if root.left, it.err = it.root.List(ctx); it.err != nil {
+			return false
+		}
+
+		it.queue = append(it.queue, root)
+		it.init = true
+	}
+
 	if it.err != nil || len(it.queue) == 0 {
 		it.done = true
 		return false
@@ -64,7 +69,13 @@ func (it *iter) Next(ctx context.Context) bool {
 	}
 
 	if r, ok := it.it.v.(Reader); ok {
-		it.queue = append(it.queue, elm{parent: r, key: it.it.key, left: r.List(ctx)})
+		child := elm{parent: r, key: it.it.key}
+
+		if child.left, it.err = r.List(ctx); it.err != nil {
+			return false
+		}
+
+		it.queue = append(it.queue, child)
 	} else {
 		it.it.leaf = true
 	}

@@ -1,6 +1,10 @@
 package objects
 
-import "context"
+import (
+	"context"
+
+	"rafal.dev/objects/types"
+)
 
 type teeReader struct {
 	R Reader
@@ -8,66 +12,38 @@ type teeReader struct {
 }
 
 var (
-	_ Reader     = (*teeReader)(nil)
-	_ SafeReader = (*teeReader)(nil)
-	_ ListerTo   = (*teeReader)(nil)
+	_ Reader = (*teeReader)(nil)
+	_ Meta   = (*teeReader)(nil)
 )
 
 func TeeReader(r Reader, w Writer) Reader {
-	var (
-		tr    = &teeReader{R: r, W: w}
-		_, sr = r.(SafeReader)
-		_, lt = r.(ListerTo)
-	)
-
-	switch {
-	case sr && lt:
-		return tr
-	case sr:
-		return struct {
-			Reader
-			SafeReader
-		}{tr, tr}
-	case lt:
-		return struct {
-			Reader
-			ListerTo
-		}{tr, tr}
-	default:
-		return struct{ Reader }{tr}
-	}
+	return &teeReader{R: r, W: w}
 }
 
 func (tr *teeReader) Type() Type {
-	return tr.R.Type()
+	if m, ok := tr.R.(Meta); ok {
+		return m.Type()
+	}
+	return nil
 }
 
-func (tr *teeReader) Get(ctx context.Context, key string) (any, bool) {
-	v, ok := tr.R.Get(ctx, key)
-	if !ok {
-		return nil, false
-	}
-
-	v, err := tr.tee(ctx, v, key)
-	if err != nil {
-		return nil, false
-	}
-
-	return v, true
-}
-
-func (tr *teeReader) SafeGet(ctx context.Context, key string) (any, error) {
-	v, err := tr.R.(SafeReader).SafeGet(ctx, key)
+func (tr *teeReader) Get(ctx context.Context, key string) (any, error) {
+	v, err := tr.R.Get(ctx, key)
 	if err != nil {
 		return nil, err
 	}
 
-	return tr.tee(ctx, v, key)
+	v, err = tr.tee(ctx, v, key)
+	if err != nil {
+		return nil, err
+	}
+
+	return v, nil
 }
 
 func (tr *teeReader) tee(ctx context.Context, v any, key string) (any, error) {
 	if r, ok := tryMake(v).(Reader); ok {
-		w, err := Put(ctx, tr.W, r.Type(), key)
+		w, err := tr.W.Put(ctx, key, types.TypeOf(r))
 		if err != nil {
 			return nil, err
 		}
@@ -75,17 +51,13 @@ func (tr *teeReader) tee(ctx context.Context, v any, key string) (any, error) {
 		return TeeReader(r, w), nil
 	}
 
-	if _, err := Set(ctx, tr.W, v, key); err != nil {
+	if err := tr.W.Set(ctx, key, v); err != nil {
 		return nil, err
 	}
 
 	return v, nil
 }
 
-func (tr *teeReader) List(ctx context.Context) []string {
+func (tr *teeReader) List(ctx context.Context) ([]string, error) {
 	return tr.R.List(ctx)
-}
-
-func (tr *teeReader) ListTo(ctx context.Context, keys *[]string) {
-	tr.R.(ListerTo).ListTo(ctx, keys)
 }
