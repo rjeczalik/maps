@@ -1,6 +1,7 @@
 package mergelist
 
 import (
+	"context"
 	"net/url"
 	"strconv"
 )
@@ -27,6 +28,10 @@ func (l List) Type() Type {
 
 func (l List) Len() int {
 	return len(l)
+}
+
+func (l *List) Set(ctx context.Context, key string, value any) error {
+	return nil
 }
 
 func (l List) index(key, op string) (int, error) {
